@@ -11,6 +11,7 @@
   #main div { line-height: 1.6; }
   .help { color: #4a90e2; font-style: italic; }
   .orange { color: #f0a030; }
+  .hidden { display: none; }
   #log { margin-top: 1.1em; padding-left: 3px; color: #f0a030; }
   #log div { line-height: 1.38 !important; white-space: nowrap; overflow: hidden; }
 </style>
@@ -20,13 +21,15 @@
 <div id="main">
   <div class="help">Help:</div>
   <div class="help" id="status">1. Please wait for GPS positioning...</div>
-  <div id="lon">Longitude: </div>
-  <div id="lat">Latitude: </div>
+  <div id="coords">Coordinates: </div>
+  <div class="loc" id="lon">Longitude: </div>
+  <div class="loc" id="lat">Latitude: </div>
   <div id="alt">Altitude: </div>
   <div id="acc">Accuracy: </div>
   <div id="altacc">Altitude accuracy: </div>
   <div id="spd">Speed: </div>
-  <div id="hdg">Heading: </div>
+  <div id="hdg">Heading (compass): </div>
+  <div id="dir">Direction of travel: </div>
   <div id="time">Last fix: </div>
   <div class="orange" id="sats">Number of satellites detected: N/A</div>
   <div class="orange" id="fixes">Number of fixes received: 0</div>
@@ -36,6 +39,58 @@
   function $(id) { return document.getElementById(id); }
   var log = $('log');
   var n = 0;
+  var speeds = [];
+  var lastLat = null, lastLon = null;
+  var hide = false;
+  try { hide = localStorage.getItem('hideCoords') === '1'; } catch (e) {}
+
+  // Tap the coordinates line to hide/show your location
+  function showCoords() {
+    $('lon').className = $('lat').className = hide ? 'loc hidden' : 'loc';
+    $('coords').textContent = hide ? 'Coordinates: hidden (tap to show)'
+      : 'Coordinates: ' + (lastLat === null ? '' : lastLat.toFixed(6) + ', ' + lastLon.toFixed(6));
+  }
+  $('coords').onclick = function () {
+    hide = !hide;
+    try { localStorage.setItem('hideCoords', hide ? '1' : '0'); } catch (e) {}
+    showCoords();
+  };
+  showCoords();
+
+  // Compass: which way the phone points, works at any tilt
+  function compass(e) {
+    var h = null;
+    if (typeof e.webkitCompassHeading === 'number') {
+      h = e.webkitCompassHeading;
+    } else if (e.absolute !== false && e.alpha !== null) {
+      var r = Math.PI / 180, a = e.alpha * r, b = e.beta * r, g = e.gamma * r;
+      if (Math.abs(e.beta) < 45) {
+        h = 360 - e.alpha; // lying flat: direction the top of the phone points
+      } else {
+        // held up: direction the back camera points
+        var vx = -Math.cos(a) * Math.sin(g) - Math.sin(a) * Math.sin(b) * Math.cos(g);
+        var vy = -Math.sin(a) * Math.sin(g) + Math.cos(a) * Math.sin(b) * Math.cos(g);
+        h = Math.atan2(vx, vy) / r;
+      }
+      h -= (screen.orientation && screen.orientation.angle) || 0;
+    }
+    if (h === null || isNaN(h)) return;
+    h = ((h % 360) + 360) % 360;
+    var names = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    $('hdg').textContent = 'Heading (compass): ' + h.toFixed(0) + '\u00B0 ' + names[Math.round(h / 45) % 8];
+  }
+  if ('ondeviceorientationabsolute' in window) {
+    window.addEventListener('deviceorientationabsolute', compass);
+  } else {
+    window.addEventListener('deviceorientation', compass);
+  }
+  // iPhone needs a tap before it allows the compass
+  document.addEventListener('click', function () {
+    if (window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission) {
+      DeviceOrientationEvent.requestPermission().catch(function () {});
+    }
+  });
+  $('hdg').textContent = 'Heading (compass): waiting for compass...';
 
   function dms(deg, pos, neg) {
     var hemi = deg >= 0 ? pos : neg;
@@ -46,7 +101,7 @@
     var s = Math.round((mFull - m) * 60);
     if (s === 60) { s = 0; m++; }
     if (m === 60) { m = 0; d++; }
-    return d + '°' + m + '’' + s + '”' + hemi;
+    return d + '\u00B0' + m + '’' + s + '”' + hemi;
   }
 
   function num(x, digits, unit) {
@@ -60,13 +115,28 @@
       var c = p.coords;
       n++;
       $('status').textContent = '1. GPS positioning OK';
+      lastLat = c.latitude; lastLon = c.longitude;
+      showCoords();
       $('lon').textContent = 'Longitude: ' + dms(c.longitude, 'E', 'W');
       $('lat').textContent = 'Latitude: ' + dms(c.latitude, 'N', 'S');
       $('alt').textContent = 'Altitude: ' + num(c.altitude, 2, ' m');
       $('acc').textContent = 'Accuracy: ' + num(c.accuracy, 2, ' m');
-      $('altacc').textContent = 'Altitude accuracy: ' + num(c.altitudeAccuracy, 2, ' m');
-      $('spd').textContent = 'Speed: ' + num(c.speed, 2, ' m/s');
-      $('hdg').textContent = 'Heading: ' + num(c.heading, 0, '°');
+      $('altacc').textContent = 'Altitude accuracy: ' +
+        (c.altitudeAccuracy === null ? 'not provided by this phone' : num(c.altitudeAccuracy, 2, ' m'));
+      // Smooth out GPS noise: median of the last 5 speeds, under 0.5 m/s counts as still
+      var moving = false;
+      if (c.speed === null || isNaN(c.speed)) {
+        $('spd').textContent = 'Speed: unknown';
+      } else {
+        speeds.push(c.speed);
+        if (speeds.length > 5) speeds.shift();
+        var sorted = speeds.slice().sort(function (a, b) { return a - b; });
+        var med = sorted[Math.floor(sorted.length / 2)];
+        moving = med >= 0.5;
+        $('spd').textContent = 'Speed: ' + (moving ? med.toFixed(2) + ' m/s' : '0.00 m/s (standing still)');
+      }
+      $('dir').textContent = 'Direction of travel: ' +
+        (moving && c.heading !== null && !isNaN(c.heading) ? c.heading.toFixed(0) + '\u00B0' : 'not moving');
       $('time').textContent = 'Last fix: ' + new Date(p.timestamp).toLocaleTimeString();
       $('fixes').textContent = 'Number of fixes received: ' + n;
       var d = document.createElement('div');
