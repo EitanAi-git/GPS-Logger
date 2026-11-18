@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPS Logger</title>
+<style>
+  html, body { margin: 0; background: #000; color: #ff9933; font-family: monospace; font-size: 14px; }
+  #log div { padding: 2px 6px; border-bottom: 1px solid #331a00; white-space: pre-wrap; word-break: break-all; }
+</style>
+</head>
+<body>
+<div id="log"></div>
+<script>
+  var log = document.getElementById('log');
+  var n = 0;
+
+  function line(text) {
+    var d = document.createElement('div');
+    d.textContent = '[' + new Date().toISOString() + '] ' + text;
+    log.insertBefore(d, log.firstChild);
+  }
+
+  function v(x) { return x === null || x === undefined ? 'null' : x; }
+
+  if (!('geolocation' in navigator)) {
+    line('ERROR geolocation not supported by this browser');
+  } else {
+    line('requesting location permission...');
+    navigator.geolocation.watchPosition(function (p) {
+      var c = p.coords;
+      n++;
+      line('#' + n +
+        ' lat=' + v(c.latitude) +
+        ' lon=' + v(c.longitude) +
+        ' acc=' + v(c.accuracy) + 'm' +
+        ' alt=' + v(c.altitude) +
+        ' altAcc=' + v(c.altitudeAccuracy) +
+        ' heading=' + v(c.heading) +
+        ' speed=' + v(c.speed) +
+        ' fixTime=' + new Date(p.timestamp).toISOString());
+    }, function (e) {
+      line('ERROR code=' + e.code + ' msg=' + e.message);
+    }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+  }
+</script>
+</body>
+</html>
