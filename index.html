@@ -21,7 +21,7 @@
     log.insertBefore(d, log.firstChild);
   }
 
-  function v(x) { return x === null || x === undefined ? 'unknown' : x; }
+  function v(x, unit) { return x === null || x === undefined ? 'unknown' : x + (unit ? ' ' + unit : ''); }
 
   if (!('geolocation' in navigator)) {
     line('Error: this browser does not support location');
@@ -33,11 +33,11 @@
       line('Update ' + n +
         ' | Latitude: ' + v(c.latitude) +
         ' | Longitude: ' + v(c.longitude) +
-        ' | Accuracy: ' + v(c.accuracy) + ' m' +
-        ' | Altitude: ' + v(c.altitude) + ' m' +
-        ' | Altitude accuracy: ' + v(c.altitudeAccuracy) + ' m' +
-        ' | Heading: ' + v(c.heading) + ' deg' +
-        ' | Speed: ' + v(c.speed) + ' m/s' +
+        ' | Accuracy: ' + v(c.accuracy, 'm') +
+        ' | Altitude: ' + v(c.altitude, 'm') +
+        ' | Altitude accuracy: ' + v(c.altitudeAccuracy, 'm') +
+        ' | Heading: ' + v(c.heading, 'degrees') +
+        ' | Speed: ' + v(c.speed, 'm/s') +
         ' | Fix time: ' + new Date(p.timestamp).toLocaleString());
     }, function (e) {
       line('Error ' + e.code + ': ' + e.message);
