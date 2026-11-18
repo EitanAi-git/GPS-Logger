@@ -17,30 +17,30 @@
 
   function line(text) {
     var d = document.createElement('div');
-    d.textContent = '[' + new Date().toISOString() + '] ' + text;
+    d.textContent = new Date().toLocaleTimeString() + '  ' + text;
     log.insertBefore(d, log.firstChild);
   }
 
-  function v(x) { return x === null || x === undefined ? 'null' : x; }
+  function v(x) { return x === null || x === undefined ? 'unknown' : x; }
 
   if (!('geolocation' in navigator)) {
-    line('ERROR geolocation not supported by this browser');
+    line('Error: this browser does not support location');
   } else {
-    line('requesting location permission...');
+    line('Asking for location permission...');
     navigator.geolocation.watchPosition(function (p) {
       var c = p.coords;
       n++;
-      line('#' + n +
-        ' lat=' + v(c.latitude) +
-        ' lon=' + v(c.longitude) +
-        ' acc=' + v(c.accuracy) + 'm' +
-        ' alt=' + v(c.altitude) +
-        ' altAcc=' + v(c.altitudeAccuracy) +
-        ' heading=' + v(c.heading) +
-        ' speed=' + v(c.speed) +
-        ' fixTime=' + new Date(p.timestamp).toISOString());
+      line('Update ' + n +
+        ' | Latitude: ' + v(c.latitude) +
+        ' | Longitude: ' + v(c.longitude) +
+        ' | Accuracy: ' + v(c.accuracy) + ' m' +
+        ' | Altitude: ' + v(c.altitude) + ' m' +
+        ' | Altitude accuracy: ' + v(c.altitudeAccuracy) + ' m' +
+        ' | Heading: ' + v(c.heading) + ' deg' +
+        ' | Speed: ' + v(c.speed) + ' m/s' +
+        ' | Fix time: ' + new Date(p.timestamp).toLocaleString());
     }, function (e) {
-      line('ERROR code=' + e.code + ' msg=' + e.message);
+      line('Error ' + e.code + ': ' + e.message);
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
   }
 </script>
