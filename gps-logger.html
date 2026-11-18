@@ -5,42 +5,65 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GPS Logger</title>
 <style>
-  html, body { margin: 0; background: #000; color: #ff9933; font-family: monospace; font-size: 14px; }
-  #log div { padding: 2px 6px; border-bottom: 1px solid #331a00; white-space: pre-wrap; word-break: break-all; }
+  html, body { margin: 0; background: #000; color: #ff9933; font-family: sans-serif; font-size: 20px; }
+  body { padding: 4px 6px; }
+  div { line-height: 1.35; white-space: pre-wrap; word-break: break-all; }
+  #log { margin-top: 1em; }
 </style>
 </head>
 <body>
+<div id="status">Please wait for GPS positioning...</div>
+<div id="lon">Longitude: </div>
+<div id="lat">Latitude: </div>
+<div id="alt">Altitude: </div>
+<div id="acc">Accuracy: </div>
+<div id="sats">Number of satellites detected: not available in a browser</div>
 <div id="log"></div>
 <script>
-  var log = document.getElementById('log');
+  function $(id) { return document.getElementById(id); }
+  var log = $('log');
   var n = 0;
+
+  function dms(deg, pos, neg) {
+    var hemi = deg >= 0 ? pos : neg;
+    deg = Math.abs(deg);
+    var d = Math.floor(deg);
+    var mFull = (deg - d) * 60;
+    var m = Math.floor(mFull);
+    var s = Math.round((mFull - m) * 60);
+    if (s === 60) { s = 0; m++; }
+    if (m === 60) { m = 0; d++; }
+    return d + '°' + m + '’' + s + '”' + hemi;
+  }
 
   function line(text) {
     var d = document.createElement('div');
-    d.textContent = new Date().toLocaleTimeString() + '  ' + text;
+    d.textContent = text;
     log.insertBefore(d, log.firstChild);
   }
 
-  function v(x, unit) { return x === null || x === undefined ? 'unknown' : x + (unit ? ' ' + unit : ''); }
-
   if (!('geolocation' in navigator)) {
-    line('Error: this browser does not support location');
+    $('status').textContent = 'This browser does not support location';
   } else {
-    line('Asking for location permission...');
     navigator.geolocation.watchPosition(function (p) {
       var c = p.coords;
       n++;
-      line('Update ' + n +
-        ' | Latitude: ' + v(c.latitude) +
-        ' | Longitude: ' + v(c.longitude) +
-        ' | Accuracy: ' + v(c.accuracy, 'm') +
-        ' | Altitude: ' + v(c.altitude, 'm') +
-        ' | Altitude accuracy: ' + v(c.altitudeAccuracy, 'm') +
-        ' | Heading: ' + v(c.heading, 'degrees') +
-        ' | Speed: ' + v(c.speed, 'm/s') +
-        ' | Fix time: ' + new Date(p.timestamp).toLocaleString());
+      $('status').textContent = 'GPS positioning OK';
+      $('lon').textContent = 'Longitude: ' + dms(c.longitude, 'E', 'W');
+      $('lat').textContent = 'Latitude: ' + dms(c.latitude, 'N', 'S');
+      $('alt').textContent = 'Altitude: ' + (c.altitude === null ? 'unknown' : c.altitude.toFixed(2) + ' m');
+      $('acc').textContent = 'Accuracy: ' + c.accuracy.toFixed(2) + ' m';
+      line('Fix' + n +
+        ' ' + new Date(p.timestamp).toLocaleTimeString() +
+        ' Lat:' + c.latitude.toFixed(6) +
+        ' Lon:' + c.longitude.toFixed(6) +
+        ' Acc:' + c.accuracy.toFixed(1) + 'm' +
+        ' Speed:' + (c.speed === null ? 'unknown' : c.speed.toFixed(1) + 'm/s') +
+        ' Heading:' + (c.heading === null || isNaN(c.heading) ? 'unknown' : c.heading.toFixed(0) + '°'));
     }, function (e) {
-      line('Error ' + e.code + ': ' + e.message);
+      var msg = e.message || ['', 'Location permission denied', 'Position unavailable', 'Timed out'][e.code] || 'Unknown error';
+      $('status').textContent = 'Error: ' + msg;
+      line('Error: ' + msg);
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
   }
 </script>
