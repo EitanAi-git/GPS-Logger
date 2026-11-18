@@ -128,7 +128,7 @@
       $('fixes').textContent = 'Number of fixes received: ' + n;
       var d = document.createElement('div');
       d.textContent = 'GpsFix' + (n - 1) + ' ACC:' + num(c.accuracy, 1, '') + ' SPD:' + num(c.speed, 1, '');
-      log.appendChild(d);
+      log.insertBefore(d, log.firstChild);
     }, function (e) {
       var msg = e.message || ['', 'Location permission denied', 'Position unavailable', 'Timed out'][e.code] || 'Unknown error';
       $('status').textContent = '1. Error: ' + msg;
