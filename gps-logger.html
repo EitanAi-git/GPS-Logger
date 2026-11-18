@@ -39,7 +39,6 @@
   function $(id) { return document.getElementById(id); }
   var log = $('log');
   var n = 0;
-  var speeds = [];
   var lastLat = null, lastLon = null;
   var hide = false;
   try { hide = localStorage.getItem('hideCoords') === '1'; } catch (e) {}
@@ -123,20 +122,8 @@
       $('acc').textContent = 'Accuracy: ' + num(c.accuracy, 2, ' m');
       $('altacc').textContent = 'Altitude accuracy: ' +
         (c.altitudeAccuracy === null ? 'not provided by this phone' : num(c.altitudeAccuracy, 2, ' m'));
-      // Smooth out GPS noise: median of the last 5 speeds, under 0.5 m/s counts as still
-      var moving = false;
-      if (c.speed === null || isNaN(c.speed)) {
-        $('spd').textContent = 'Speed: unknown';
-      } else {
-        speeds.push(c.speed);
-        if (speeds.length > 5) speeds.shift();
-        var sorted = speeds.slice().sort(function (a, b) { return a - b; });
-        var med = sorted[Math.floor(sorted.length / 2)];
-        moving = med >= 0.5;
-        $('spd').textContent = 'Speed: ' + (moving ? med.toFixed(2) + ' m/s' : '0.00 m/s (standing still)');
-      }
-      $('dir').textContent = 'Direction of travel: ' +
-        (moving && c.heading !== null && !isNaN(c.heading) ? c.heading.toFixed(0) + '\u00B0' : 'not moving');
+      $('spd').textContent = 'Speed: ' + num(c.speed, 2, ' m/s');
+      $('dir').textContent = 'Direction of travel: ' + num(c.heading, 0, '\u00B0');
       $('time').textContent = 'Last fix: ' + new Date(p.timestamp).toLocaleTimeString();
       $('fixes').textContent = 'Number of fixes received: ' + n;
       var d = document.createElement('div');
