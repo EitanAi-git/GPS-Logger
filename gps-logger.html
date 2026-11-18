@@ -19,7 +19,7 @@
 <div id="lat">Latitude: </div>
 <div id="alt">Altitude: </div>
 <div id="acc">Accuracy: </div>
-<div id="sats">Number of satellites detected: not available in a browser</div>
+<div id="sats">Number of satellites detected: N/A</div>
 <div id="log"></div>
 <script>
   function $(id) { return document.getElementById(id); }
@@ -59,8 +59,7 @@
         ' SPD:' + (c.speed === null ? '-' : c.speed.toFixed(1)));
     }, function (e) {
       var msg = e.message || ['', 'Location permission denied', 'Position unavailable', 'Timed out'][e.code] || 'Unknown error';
-      $('status').textContent = 'Error: ' + msg;
-      line('Error: ' + msg);
+      $('status').textContent = '1. Error: ' + msg;
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
   }
 </script>
