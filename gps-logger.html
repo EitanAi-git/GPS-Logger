@@ -8,11 +8,13 @@
   html, body { margin: 0; background: #000; color: #ff9933; font-family: sans-serif; font-size: 20px; }
   body { padding: 4px 6px; }
   div { line-height: 1.35; white-space: pre-wrap; word-break: break-all; }
-  #log { margin-top: 1em; }
+  #log { margin-top: 1em; padding-left: 4px; }
+  #log div { white-space: nowrap; overflow: hidden; }
 </style>
 </head>
 <body>
-<div id="status">Please wait for GPS positioning...</div>
+<div>Help:</div>
+<div id="status">1. Please wait for GPS positioning...</div>
 <div id="lon">Longitude: </div>
 <div id="lat">Latitude: </div>
 <div id="alt">Altitude: </div>
@@ -39,7 +41,7 @@
   function line(text) {
     var d = document.createElement('div');
     d.textContent = text;
-    log.insertBefore(d, log.firstChild);
+    log.appendChild(d);
   }
 
   if (!('geolocation' in navigator)) {
@@ -48,18 +50,13 @@
     navigator.geolocation.watchPosition(function (p) {
       var c = p.coords;
       n++;
-      $('status').textContent = 'GPS positioning OK';
+      $('status').textContent = '1. GPS positioning OK';
       $('lon').textContent = 'Longitude: ' + dms(c.longitude, 'E', 'W');
       $('lat').textContent = 'Latitude: ' + dms(c.latitude, 'N', 'S');
       $('alt').textContent = 'Altitude: ' + (c.altitude === null ? 'unknown' : c.altitude.toFixed(2) + ' m');
       $('acc').textContent = 'Accuracy: ' + c.accuracy.toFixed(2) + ' m';
-      line('Fix' + n +
-        ' ' + new Date(p.timestamp).toLocaleTimeString() +
-        ' Lat:' + c.latitude.toFixed(6) +
-        ' Lon:' + c.longitude.toFixed(6) +
-        ' Acc:' + c.accuracy.toFixed(1) + 'm' +
-        ' Speed:' + (c.speed === null ? 'unknown' : c.speed.toFixed(1) + 'm/s') +
-        ' Heading:' + (c.heading === null || isNaN(c.heading) ? 'unknown' : c.heading.toFixed(0) + '°'));
+      line('GpsFix' + n + ' ACC:' + c.accuracy.toFixed(1) +
+        ' SPD:' + (c.speed === null ? '-' : c.speed.toFixed(1)));
     }, function (e) {
       var msg = e.message || ['', 'Location permission denied', 'Position unavailable', 'Timed out'][e.code] || 'Unknown error';
       $('status').textContent = 'Error: ' + msg;
