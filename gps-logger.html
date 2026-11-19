@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GPS Logger</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#222222">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
   html, body { margin: 0; background: #222; color: #ddd; font-family: Roboto, "Segoe UI", sans-serif; font-size: 17px; }
   #bar { background: #9e9e9e; color: #bdbdbd; font-weight: bold; font-size: 17px; padding: 11px 12px; }
@@ -17,7 +21,7 @@
 </style>
 </head>
 <body>
-<div id="bar">GPS Logger v8</div>
+<div id="bar">GPS Logger v9</div>
 <div id="main">
   <div class="help">Help:</div>
   <div class="help" id="status">1. Please wait for GPS positioning...</div>
@@ -133,6 +137,9 @@
       var msg = e.message || ['', 'Location permission denied', 'Position unavailable', 'Timed out'][e.code] || 'Unknown error';
       $('status').textContent = '1. Error: ' + msg;
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+  }
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
   }
 </script>
 </body>
